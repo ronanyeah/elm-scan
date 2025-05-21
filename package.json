@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "scan": "elm-review --config . --extract --report=json --elmjson $__ELM_JSON_FILE | jq .extracts.Extraction"
+  },
+  "dependencies": {
+    "elm-review": "^2.13.2"
+  }
+}
