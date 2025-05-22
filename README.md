@@ -1,5 +1,7 @@
 # elm-scan
 
+Analyses an Elm application and exports all definitions and associated type signatures to JSON.
+
 ```bash
 # bash
 elm-scan () {
@@ -16,4 +18,10 @@ elm-scan () {
 ```bash
 # Inside an Elm application folder containing `elm.json`
 $ elm-scan
+
+# Save output
+$ elm-scan > project_definitions.json
+
+# Interact with the json output
+$ elm-scan | jless
 ```
