@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "scan": "elm-review --config . --extract --report=json --elmjson $__ELM_JSON_FILE | jq .extracts.Extraction"
+    "watch": "source scripts/elm_watch.sh",
+    "scan": "elm-review --config . --extract --report=json --elmjson $__ELM_JSON_FILE"
   },
   "dependencies": {
     "elm-review": "^2.13.2"
