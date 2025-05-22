@@ -13,7 +13,7 @@ import Review.Rule as Rule exposing (Rule)
 type alias Def =
     { name : String
     , type_ : String
-    , data : String
+    , data : JE.Value
     }
 
 
@@ -109,25 +109,40 @@ declarationListVisitor nodes context =
                                                     _ ->
                                                         "function"
                                             )
-                                , data = data
+                                , data = JE.string data
                                 }
 
                             Declaration.AliasDeclaration x ->
-                                { name =
-                                    x
-                                        |> .name
-                                        |> Node.value
-                                , type_ =
-                                    case Node.value x.typeAnnotation of
-                                        Record _ ->
-                                            "record"
+                                let
+                                    isRecord =
+                                        case Node.value x.typeAnnotation of
+                                            Record _ ->
+                                                True
 
-                                        _ ->
-                                            "alias"
-                                , data =
-                                    typeName x.typeAnnotation
-                                        |> Result.Extra.unpack identity identity
-                                }
+                                            _ ->
+                                                False
+
+                                    name =
+                                        x
+                                            |> .name
+                                            |> Node.value
+                                in
+                                if isRecord then
+                                    { name = name
+                                    , type_ = "record"
+                                    , data =
+                                        jsonRecord x.typeAnnotation
+                                            |> Result.Extra.unpack JE.string identity
+                                    }
+
+                                else
+                                    { name = name
+                                    , type_ = "alias"
+                                    , data =
+                                        typeName x.typeAnnotation
+                                            |> Result.Extra.unpack identity identity
+                                            |> JE.string
+                                    }
 
                             Declaration.CustomTypeDeclaration x ->
                                 { name =
@@ -139,6 +154,7 @@ declarationListVisitor nodes context =
                                     x.constructors
                                         |> List.map (Node.value >> .name >> Node.value)
                                         |> String.join " | "
+                                        |> JE.string
                                 }
 
                             Declaration.PortDeclaration p ->
@@ -147,19 +163,25 @@ declarationListVisitor nodes context =
                                         |> .name
                                         |> Node.value
                                 , type_ = "port"
-                                , data = "???"
+                                , data =
+                                    "???"
+                                        |> JE.string
                                 }
 
                             Declaration.InfixDeclaration _ ->
                                 { name = "???"
                                 , type_ = "infix"
-                                , data = "???"
+                                , data =
+                                    "???"
+                                        |> JE.string
                                 }
 
                             Declaration.Destructuring _ _ ->
                                 { name = "???"
                                 , type_ = "destructure"
-                                , data = "???"
+                                , data =
+                                    "???"
+                                        |> JE.string
                                 }
                     )
     }
@@ -170,12 +192,11 @@ dataExtractor declarations =
     JE.dict identity
         (JE.list
             (\def ->
-                def.name
-                    ++ " : "
-                    ++ def.type_
-                    ++ " : "
-                    ++ def.data
-                    |> JE.string
+                [ ( "name", JE.string def.name )
+                , ( "type", JE.string def.type_ )
+                , ( "data", def.data )
+                ]
+                    |> JE.object
             )
         )
         declarations
@@ -280,18 +301,47 @@ typeName t =
                         "(" ++ String.join ", " val ++ ")"
                     )
 
-        Record xs ->
-            recordEntries xs
-                |> Result.map
-                    (\val ->
-                        "{ " ++ (val |> String.join ", ") ++ " }"
-                    )
+        Record entries ->
+            recordEntries entries
+                |> Result.map formatDict
 
         GenericRecord _ _ ->
             Err "TodoGenericRecord_"
 
 
-recordEntries : List (Node.Node ( Node.Node String, Node.Node TypeAnnotation )) -> Result String (List String)
+jsonRecord : Node.Node TypeAnnotation -> Result String JE.Value
+jsonRecord t =
+    case Node.value t of
+        Record entries ->
+            recordEntries entries
+                |> Result.map
+                    (\xs ->
+                        xs
+                            |> List.map
+                                (\( k, v ) ->
+                                    ( k, JE.string v )
+                                )
+                            |> JE.object
+                    )
+
+        _ ->
+            Err "BAD_RECORD"
+
+
+formatDict : List ( String, String ) -> String
+formatDict xs =
+    xs
+        |> List.map
+            (\( k, v ) ->
+                k ++ ": " ++ v
+            )
+        |> String.join ", "
+        |> (\x ->
+                "{ " ++ x ++ " }"
+           )
+
+
+recordEntries : List (Node.Node ( Node.Node String, Node.Node TypeAnnotation )) -> Result String (List ( String, String ))
 recordEntries xs =
     xs
         |> List.map Node.value
@@ -300,7 +350,7 @@ recordEntries xs =
                 typeName t
                     |> Result.map
                         (\val ->
-                            Node.value n ++ ": " ++ val
+                            ( Node.value n, val )
                         )
             )
         |> Result.Extra.combine
