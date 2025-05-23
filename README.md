@@ -2,19 +2,13 @@
 
 Analyses an Elm application and exports all definitions and associated type signatures to JSON.
 
-```bash
-# bash
-elm-scan () {
-  local abs_path=$(realpath .)
-  local elm_file="$abs_path/elm.json"
-  if [ -f "$elm_file" ]; then
-    __ELM_JSON_FILE="$elm_file" npm --silent --prefix ./path/to/elm-scan run scan | jq .extracts.Extraction
-  else
-    echo "no elm.json present"
-  fi
-}
-```
+### Setup
+- `git clone git@github.com:ronanyeah/elm-scan.git`
+- `cd elm-scan`
+- `npm install --production`
+- `npm install --global .`
 
+### Usage
 ```bash
 # Inside an Elm application folder containing `elm.json`
 $ elm-scan
