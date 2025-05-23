@@ -1,9 +1,17 @@
 {
+  "name": "elm-scan",
+  "version": "1.0.0",
+  "bin": "./dist/cli.js",
   "scripts": {
     "watch": "source scripts/elm_watch.sh",
+    "build": "esbuild --bundle src/index.ts --outfile=dist/cli.js --platform=node --banner:js='#!/usr/bin/env node'",
     "scan": "elm-review --config . --extract --report=json --elmjson $__ELM_JSON_FILE"
   },
   "dependencies": {
     "elm-review": "^2.13.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.4",
+    "json-colorizer": "^3.0.1"
   }
 }
